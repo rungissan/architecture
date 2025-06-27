@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Load Edge Computing System Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .architecture-diagram {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 40px;
+            border-radius: 20px;
+            margin: 40px 0;
+            overflow-x: auto;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border: 1px solid #dee2e6;
+        }
+
+        .diagram-container {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 12px;
+            line-height: 1.3;
+            white-space: pre;
+            min-width: 800px;
+            color: #2c3e50;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            margin: 0 auto;
+            display: block;
+            overflow-x: auto;
+        }
+
+        .challenges-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .challenge-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .challenge-item h4 {
+            color: #dc3545;
+            margin-bottom: 8px;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tech-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .tech-item h4 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pros, .cons {
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .pros {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .cons {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+
+        .pros h4 {
+            color: #28a745;
+        }
+
+        .cons h4 {
+            color: #dc3545;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .failure-scenarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .scenario {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .scenario h4 {
+            color: #b7791f;
+            margin-bottom: 15px;
+        }
+
+        .solution {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .solution h5 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .interactive-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .interactive-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .full-width {
+                grid-column: span 1;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .challenges-list,
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .star-rating {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>High-Load Edge Computing System</h1>
+            <p>Scalable Architecture for Real-Time IoT Data Processing</p>
+        </header>
+
+        <div class="content-grid">
+            <div class="card">
+                <h2>🎯 Problem Overview</h2>
+                <p>Design a system that handles <span class="highlight">0-100 detections every 100ms</span> from multiple edge devices, with requirements for:</p>
+                <ul style="margin-top: 15px; padding-left: 20px;">
+                    <li>Real-time processing with sub-second latency</li>
+                    <li>10x scalability for device growth</li>
+                    <li>High availability and fault tolerance</li>
+                    <li>Efficient storage of time-series data</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>📊 Key Metrics</h2>
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-value">100K</div>
+                        <div class="metric-label">Events/Second</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">99.9%</div>
+                        <div class="metric-label">Availability</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">&lt;100ms</div>
+                        <div class="metric-label">P95 Latency</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">10x</div>
+                        <div class="metric-label">Scalability</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>⚠️ Technical Challenges</h2>
+            <div class="challenges-list">
+                <div class="challenge-item">
+                    <h4>High Velocity Data</h4>
+                    <p>Up to 10,000 events/second per device with variable burst patterns</p>
+                </div>
+                <div class="challenge-item">
+                    <h4>Network Reliability</h4>
+                    <p>Edge devices with intermittent connectivity and network issues</p>
+                </div>
+                <div class="challenge-item">
+                    <h4>Storage Scalability</h4>
+                    <p>Massive data volume growth requiring efficient time-series storage</p>
+                </div>
+                <div class="challenge-item">
+                    <h4>Fault Tolerance</h4>
+                    <p>System must continue operating during component failures</p>
+                </div>
+                <div class="challenge-item">
+                    <h4>Query Performance</h4>
+                    <p>Real-time analytics on large datasets with complex queries</p>
+                </div>
+                <div class="challenge-item">
+                    <h4>Geographic Distribution</h4>
+                    <p>Edge devices across different locations with varying latencies</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="architecture-diagram">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50; font-weight: 600;">System Architecture</h2>
+            <div class="diagram-container">
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│ Edge Device │  │ Edge Device │  │ Edge Device │
+│   Group A   │  │   Group B   │  │   Group C   │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       │                │                │
+       └────────────────┼────────────────┘
+                        │
+                        ▼
+            ┌───────────────────────┐
+            │    Load Balancer      │
+            │     (HAProxy)         │
+            └───────────┬───────────┘
+                        │
+                        ▼
+            ┌───────────────────────┐
+            │     API Gateway       │
+            │  (Kong/AWS Gateway)   │
+            └───────────┬───────────┘
+                        │
+                        ▼
+            ┌───────────────────────┐
+            │   Message Broker      │
+            │   (Apache Kafka)      │
+            │  ┌─────────────────┐  │
+            │  │Topic: detections│  │
+            │  │  Partitions: 12 │  │
+            │  └─────────────────┘  │
+            └───────────┬───────────┘
+                        │
+                        ▼
+       ┌────────────────┼────────────────┐
+       │                │                │
+       ▼                ▼                ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│Stream Proc.  │  │Batch Proc.   │  │ Real-time    │
+│ (Kafka       │  │ (NestJS      │  │ Analytics    │
+│  Streams)    │  │ Backend)     │  │ (NestJS)     │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                 │
+       │                 │                 │
+       └─────────────────┼─────────────────┘
+                         │
+                         ▼
+            ┌────────────────────────┐
+            │      Data Layer        │
+            │                        │
+            │  ┌─────────────────┐   │
+            │  │ InfluxDB Cluster│   │
+            │  │ Master+2 Slaves │   │
+            │  └─────────────────┘   │
+            │                        │
+            │  ┌─────────────────┐   │
+            │  │ Redis Cluster   │   │
+            │  │ (Cache Layer)   │   │
+            │  └─────────────────┘   │
+            └────────────┬───────────┘
+                         │
+                         ▼
+            ┌────────────────────────┐
+            │     Client APIs        │
+            │  ┌─────────────────┐   │
+            │  │ NestJS Backend  │   │
+            │  │ REST/GraphQL/WS │   │
+            │  └─────────────────┘   │
+            └────────────────────────┘
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <h2>🔧 Technology Stack</h2>
+                <div class="tech-stack">
+                    <div class="tech-item">
+                        <h4>Apache Kafka</h4>
+                        <p>Message Broker<br>Millions msg/sec</p>
+                    </div>
+                    <div class="tech-item">
+                        <h4>NestJS</h4>
+                        <p>Backend Framework<br>TypeScript & Scalable</p>
+                    </div>
+                    <div class="tech-item">
+                        <h4>InfluxDB</h4>
+                        <p>Time-Series DB<br>Optimized storage</p>
+                    </div>
+                    <div class="tech-item">
+                        <h4>Redis Cluster</h4>
+                        <p>Caching Layer<br>Sub-ms queries</p>
+                    </div>
+                    <div class="tech-item">
+                        <h4>Kubernetes</h4>
+                        <p>Orchestration<br>Auto-scaling</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚖️ Design Trade-offs</h2>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Pros</h4>
+                        <ul>
+                            <li>High throughput & scalability</li>
+                            <li>Fault tolerance & durability</li>
+                            <li>Independent service scaling</li>
+                            <li>Real-time processing</li>
+                            <li>Technology flexibility</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Cons</h4>
+                        <ul>
+                            <li>Increased complexity</li>
+                            <li>Operational overhead</li>
+                            <li>Higher initial costs</li>
+                            <li>Team expertise required</li>
+                            <li>Distributed debugging</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>🔄 Technology Comparison & Trade-offs</h2>
+            
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📨 Message Broker: Apache Kafka vs RabbitMQ</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Apache Kafka (CHOSEN)</h4>
+                        <ul>
+                            <li><strong>Throughput:</strong> 10M+ events/second</li>
+                            <li><strong>Scalability:</strong> Horizontal partitioning</li>
+                            <li><strong>Durability:</strong> Built-in replication</li>
+                            <li><strong>Stream Processing:</strong> Native Kafka Streams</li>
+                            <li><strong>Latency:</strong> Sub-millisecond delivery</li>
+                            <li><strong>Perfect for:</strong> High-volume IoT data</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ RabbitMQ (Alternative)</h4>
+                        <ul>
+                            <li><strong>Throughput:</strong> 50K events/second max</li>
+                            <li><strong>Scalability:</strong> Limited clustering</li>
+                            <li><strong>Memory:</strong> High memory usage</li>
+                            <li><strong>Complexity:</strong> Difficult to scale</li>
+                            <li><strong>Best for:</strong> Complex routing, low volume</li>
+                            <li><strong>Why not:</strong> Cannot handle our scale</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">🗄️ Time-Series Database: InfluxDB vs ClickHouse</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ InfluxDB (CHOSEN)</h4>
+                        <ul>
+                            <li><strong>Purpose-built:</strong> Time-series optimized</li>
+                            <li><strong>Compression:</strong> 90% storage reduction</li>
+                            <li><strong>Features:</strong> Built-in downsampling</li>
+                            <li><strong>Query Language:</strong> InfluxQL for TS data</li>
+                            <li><strong>Performance:</strong> 1M+ writes/second</li>
+                            <li><strong>Perfect for:</strong> IoT sensor data</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ ClickHouse (Alternative)</h4>
+                        <ul>
+                            <li><strong>Complexity:</strong> Over-engineered for TS</li>
+                            <li><strong>SQL Overhead:</strong> Not TS-optimized</li>
+                            <li><strong>Resources:</strong> Higher CPU/memory needs</li>
+                            <li><strong>Learning curve:</strong> Requires expertise</li>
+                            <li><strong>Best for:</strong> Complex OLAP queries</li>
+                            <li><strong>Why not:</strong> Overkill for simple TS</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">🚢 Container Orchestration: Kubernetes vs Alternatives</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Kubernetes (CHOSEN)</h4>
+                        <ul>
+                            <li><strong>Auto-scaling:</strong> HPA & VPA support</li>
+                            <li><strong>Ecosystem:</strong> Rich cloud-native tools</li>
+                            <li><strong>Multi-cloud:</strong> Vendor-neutral</li>
+                            <li><strong>Service mesh:</strong> Istio integration</li>
+                            <li><strong>Monitoring:</strong> Prometheus native</li>
+                            <li><strong>Perfect for:</strong> Complex microservices</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Docker Swarm (Alternative)</h4>
+                        <ul>
+                            <li><strong>Simplicity:</strong> Easier to learn</li>
+                            <li><strong>Limited features:</strong> Basic orchestration</li>
+                            <li><strong>Ecosystem:</strong> Smaller community</li>
+                            <li><strong>Scaling:</strong> Less sophisticated</li>
+                            <li><strong>Best for:</strong> Simple deployments</li>
+                            <li><strong>Why not:</strong> Limited for enterprise</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="comparison-table" style="margin-top: 30px;">
+                <thead>
+                    <tr>
+                        <th>Technology</th>
+                        <th>Chosen Solution</th>
+                        <th>Alternative</th>
+                        <th>Key Reason</th>
+                        <th>Performance Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Message Broker</strong></td>
+                        <td>Apache Kafka</td>
+                        <td>RabbitMQ</td>
+                        <td>200x higher throughput</td>
+                        <td>10M vs 50K msgs/sec</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time-Series DB</strong></td>
+                        <td>InfluxDB</td>
+                        <td>ClickHouse</td>
+                        <td>Purpose-built for TS</td>
+                        <td>90% compression ratio</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Orchestration</strong></td>
+                        <td>Kubernetes</td>
+                        <td>Docker Swarm</td>
+                        <td>Enterprise features</td>
+                        <td>Advanced auto-scaling</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend Framework</strong></td>
+                        <td>NestJS</td>
+                        <td>Express.js</td>
+                        <td>Enterprise structure</td>
+                        <td>Better maintainability</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card full-width">
+            <h2>📈 Design Variants Comparison</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="interactive-btn" onclick="showTab('microservices')">Event-Driven Microservices</button>
+                <button class="interactive-btn" onclick="showTab('serverless')">Serverless Architecture</button>
+                <button class="interactive-btn" onclick="showTab('hybrid')">Hybrid Edge-Cloud</button>
+                <button class="interactive-btn" onclick="showTab('monolithic')">Traditional Monolithic</button>
+            </div>
+
+            <div id="microservices" class="tab-content active">
+                <h3>🏆 Event-Driven Microservices (Recommended)</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Advantages</h4>
+                        <ul>
+                            <li>Handles millions of events/second</li>
+                            <li>Built-in fault tolerance</li>
+                            <li>Horizontal scaling</li>
+                            <li>Service independence</li>
+                            <li>Technology diversity</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Challenges</h4>
+                        <ul>
+                            <li>Complex monitoring</li>
+                            <li>Kafka cluster management</li>
+                            <li>Additional latency hops</li>
+                            <li>Resource intensive</li>
+                            <li>Learning curve</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="serverless" class="tab-content">
+                <h3>☁️ Serverless Architecture</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Advantages</h4>
+                        <ul>
+                            <li>Auto-scaling functions</li>
+                            <li>Pay-per-use pricing</li>
+                            <li>Managed services</li>
+                            <li>High availability</li>
+                            <li>Fast development</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Challenges</h4>
+                        <ul>
+                            <li>Vendor lock-in</li>
+                            <li>Cold start latency</li>
+                            <li>Limited control</li>
+                            <li>Debug complexity</li>
+                            <li>Timeout limitations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hybrid" class="tab-content">
+                <h3>🌐 Hybrid Edge-Cloud</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Advantages</h4>
+                        <ul>
+                            <li>Network resilience</li>
+                            <li>Reduced bandwidth</li>
+                            <li>Lower latency</li>
+                            <li>Cost optimization</li>
+                            <li>Privacy protection</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Challenges</h4>
+                        <ul>
+                            <li>Edge complexity</li>
+                            <li>Sync conflicts</li>
+                            <li>Device management</li>
+                            <li>Storage limitations</li>
+                            <li>Security risks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="monolithic" class="tab-content">
+                <h3>🏗️ Traditional Monolithic</h3>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✅ Advantages</h4>
+                        <ul>
+                            <li>Simple deployment</li>
+                            <li>Faster development</li>
+                            <li>Strong consistency</li>
+                            <li>Easy debugging</li>
+                            <li>Lower costs</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>❌ Challenges</h4>
+                        <ul>
+                            <li>Limited scalability</li>
+                            <li>Single point of failure</li>
+                            <li>Technology lock-in</li>
+                            <li>Deployment risks</li>
+                            <li>Resource inefficiency</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Criteria</th>
+                        <th>Event-Driven</th>
+                        <th>Serverless</th>
+                        <th>Hybrid Edge</th>
+                        <th>Monolithic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Scalability</strong></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Complexity</strong></td>
+                        <td><span class="star-rating">⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cost (Initial)</strong></td>
+                        <td><span class="star-rating">⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fault Tolerance</strong></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐⭐⭐⭐</span></td>
+                        <td><span class="star-rating">⭐⭐</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card full-width">
+            <h2>🚨 Critical Failure Scenarios & Solutions</h2>
+            <div class="failure-scenarios">
+                <div class="scenario">
+                    <h4>🗄️ Database Failure</h4>
+                    <p><strong>Problem:</strong> Primary database becomes unavailable</p>
+                    <div class="solution">
+                        <h5>Solution:</h5>
+                        <ul>
+                            <li>Master-slave replication with auto-failover</li>
+                            <li>Cross-region database backups</li>
+                            <li>Point-in-time recovery</li>
+                            <li><strong>RTO:</strong> &lt; 1 hour</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="scenario">
+                    <h4>🌐 Network Issues</h4>
+                    <p><strong>Problem:</strong> Edge devices lose connectivity</p>
+                    <div class="solution">
+                        <h5>Solution:</h5>
+                        <ul>
+                            <li>Exponential backoff retry</li>
+                            <li>Local buffering on devices</li>
+                            <li>Circuit breaker patterns</li>
+                            <li><strong>Data Loss:</strong> &lt; 0.001%</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="scenario">
+                    <h4>📨 Message Queue Failure</h4>
+                    <p><strong>Problem:</strong> Kafka cluster becomes unavailable</p>
+                    <div class="solution">
+                        <h5>Solution:</h5>
+                        <ul>
+                            <li>3-node cluster with replication</li>
+                            <li>Real-time health monitoring</li>
+                            <li>Fallback to direct DB writes</li>
+                            <li><strong>Failover:</strong> &lt; 30 seconds</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="scenario">
+                    <h4>🔍 High Query Load</h4>
+                    <p><strong>Problem:</strong> Database overwhelmed with queries</p>
+                    <div class="solution">
+                        <h5>Solution:</h5>
+                        <ul>
+                            <li>Read replicas with smart routing</li>
+                            <li>Multi-level caching (Redis + app)</li>
+                            <li>Query optimization & indexing</li>
+                            <li><strong>Load Dist:</strong> 80% reads from replicas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <h2>💰 Cost Analysis</h2>
+                <h4>Estimated Monthly Costs (AWS):</h4>
+                <ul style="margin-top: 15px; line-height: 2;">
+                    <li><strong>Compute (EKS):</strong> $2,500</li>
+                    <li><strong>Database (RDS):</strong> $1,200</li>
+                    <li><strong>Cache (ElastiCache):</strong> $800</li>
+                    <li><strong>Storage (S3/EBS):</strong> $400</li>
+                    <li><strong>Networking:</strong> $300</li>
+                    <li><strong>Monitoring:</strong> $200</li>
+                </ul>
+                <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                    <strong>Total: ~$5,400/month</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Performance Benchmarks</h2>
+                <h4>Target Performance:</h4>
+                <ul style="margin-top: 15px; line-height: 2;">
+                    <li><strong>Throughput:</strong> 100K events/sec</li>
+                    <li><strong>Peak Capacity:</strong> 1M events/sec</li>
+                    <li><strong>P95 Latency:</strong> &lt; 100ms</li>
+                    <li><strong>P99 Latency:</strong> &lt; 500ms</li>
+                    <li><strong>Availability:</strong> 99.9% uptime</li>
+                    <li><strong>Data Loss:</strong> &lt; 0.001%</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>High-Load Edge Computing System Design | Built for Scale, Reliability, and Performance</p>
+        </footer>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('.interactive-btn');
+            buttons.forEach(btn => {
+                btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            });
+            
+            // Highlight active button
+            event.target.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+        }
+
+        // Add smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all cards
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Add interactive hover effects
+        document.querySelectorAll('.tech-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'scale(1.05) rotate(2deg)';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'scale(1) rotate(0deg)';
+            });
+        });
+    </script>
+</body>
+</html>
