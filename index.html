@@ -408,107 +408,144 @@
         <div class="architecture-diagram">
             <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50; font-weight: 600;">CQRS System Architecture</h2>
             <div class="diagram-container">
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ Edge Device │  │ Edge Device │  │ Edge Device │
-│   Group A   │  │   Group B   │  │   Group C   │
-└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
-       │                │                │
-       │                │                │
-       └────────────────┼────────────────┘
-                        │
-                        ▼
-            ┌───────────────────────┐
-            │    Load Balancer      │
-            │     (HAProxy)         │
-            └───────────┬───────────┘
-                        │
-                        ▼
-            ┌───────────────────────┐
-            │     API Gateway       │
-            │  (Kong/AWS Gateway)   │
-            └───────────┬───────────┘
-                        │
-                        ▼
-╔═══════════════════════════════════════════════════════════════╗
-║                    WRITE SIDE (Commands)                      ║
-╚═══════════════════════════════════════════════════════════════╝
-            ┌───────────────────────┐
-            │  NestJS Command API   │
-            │  ┌─────────────────┐  │
-            │  │ Data Validation │  │
-            │  │ Business Logic  │  │
-            │  │ Auth & Security │  │
-            │  │ Command Handlers│  │
-            │  └─────────────────┘  │
-            └───────────┬───────────┘
-                        │
-                        ▼
-            ┌───────────────────────┐
-            │   Event Store/Broker  │
-            │   (Apache Kafka)      │
-            │  ┌─────────────────┐  │
-            │  │Topic: detections│  │
-            │  │  Partitions: 12 │  │
-            │  └─────────────────┘  │
-            └───────────┬───────────┘
-                        │
-                        ▼
-            ┌───────────────────────┐
-            │ DEDICATED WRITE       │
-            │ SERVICES              │
-            │ (Kafka Consumers)     │
-            └───────────┬───────────┘
-                        │
-       ┌────────────────┼────────────────┐
+
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│ Edge Device │   │ Edge Device │   │ Edge Device │
+│   Group A   │   │   Group B   │   │   Group C   │
+└──────┬──────┘   └──────┬──────┘   └──────┬──────┘
        │                │                │
        ▼                ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│Write Service │  │Event Handler │  │ Projection   │
-│              │  │              │  │ Service      │
-│ • Consumes   │  │ • Consumes   │  │ • Consumes   │
-│   Kafka      │  │   Kafka      │  │   Kafka      │
-│ • Batch      │  │ • Real-time  │  │ • Creates    │
-│   Processing │  │   Alerts     │  │   Read       │
-│ • ClickHouse │  │ • Webhooks   │  │   Models     │
-│   Writes     │  │ • Analytics  │  │ • Redis      │
-└──────────────┘  └──────────────┘  └──────┬───────┘
-       │                                   │
-       ▼                                   ▼
-┌──────────────┐                    ┌──────────────┐
-│Write Database│                    │ Read Models  │
-│(ClickHouse)  │                    │ (Redis +     │
-│- Time Series │                    │  ClickHouse  │
-│- Append Only │                    │  Views)      │
-│- High Write  │                    └──────┬───────┘
-└──────────────┘                           │
-                                           │
+    ┌────────────────────────────────────────┐
+    │            Load Balancer (HAProxy)     │
+    └──────────────────┬─────────────────────┘
+                       ▼
+            ┌────────────────────────────┐
+            │        API Gateway         │  (Kong / AWS)
+            └────────────┬───────────────┘
+                         ▼
 ╔═══════════════════════════════════════════════════════════════╗
-║                     READ SIDE (Queries)                      ║
+║                      WRITE SIDE (Commands)                    ║
 ╚═══════════════════════════════════════════════════════════════╝
-                                           │
-                                           ▼
-                               ┌─────────────────────┐
-                               │  NestJS Query API   │
-                               │ ┌─────────────────┐ │
-                               │ │ Query Handlers  │ │
-                               │ │ Caching Logic   │ │
-                               │ │ Read Optimized  │ │
-                               │ │ REST/GraphQL/WS │ │
-                               │ └─────────────────┘ │
-                               └─────────────────────┘
-                                           │
-                                    ┌──────┴──────┐
-                                    ▼             ▼
-                    ┌─────────────────────┐   ┌─────────────────────┐
-                    │   Client/Frontend   │   │ Monitoring & Alerts │
-                    │ ┌─────────────────┐ │   │ ┌─────────────────┐ │
-                    │ │   Dashboards    │ │   │ │   Prometheus    │ │
-                    │ │   Mobile Apps   │ │   │ │   (Metrics)     │ │
-                    │ │   Web Clients   │ │   │ │                 │ │
-                    │ └─────────────────┘ │   │ │    Grafana      │ │
-                    └─────────────────────┘   │ │ (Visualization) │ │
-                                              │ └─────────────────┘ │
-                                              └─────────────────────┘
+            ┌────────────────────────────┐
+            │     NestJS Command API     │
+            │  ┌──────────────────────┐  │             
+            │  │ Data Validation      │  │             
+            │  │ Business Logic       │  │             
+            │  │ Auth & Security      │  │             
+            │  │ Command Handlers     │  │             
+            │  └──────────────────────┘  │             
+            └────────────┬───────────────┘             
+                         ▼                              
+            ┌────────────────────────────┐              
+            │    Event Store / Broker    │             
+            │       (Apache Kafka)       │
+            │     Topic: detections.     │  
+            │    Partitions: 12          │             
+            └────────────┬───────────────┘             
+                         ▼                             
+            ┌──────────────────────────────────────────────┐
+            │        Kafka Consumers (Write Services)      │
+            │ • Subscribe to Kafka topics                  │             
+            │ • Deserialize & validate messages            │             
+            │ • Transform/enrich and route data            │
+            │ • Batch processing for efficiency.           │
+            │ • real-time alerts                           │
+            │ • Write to ClickHouse, Redis, Webhooks, etc. │             
+            └────────────┬─────────────────────────────────┘             
+                         ▼                                               
+            ┌────────────────────────────┐                            
+            │      ClickHouse (Write)    │                               
+            │ • Time Series, Append Only │                             
+            └────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════╗
+║                      READ SIDE (Queries)                      ║
+╚═══════════════════════════════════════════════════════════════╝
+            ┌────────────────────────────┐
+            │   NestJS Query API         │◄────────────┐
+            │  ┌──────────────────────┐  │             │
+            │  │ Query Handlers       │  │             │
+            │  │ Caching (Redis)      │  │             │
+            │  │ REST/GraphQL/WS      │  │             │
+            │  └──────────────────────┘  │             │
+            └────────────┬───────────────┘             │
+                         │                             │ 
+                         ▼                             │ 
+            ┌────────────────────────────┐             │
+            │   Redis (Cache Layer)      │             │
+            └────────────┬───────────────┘             │
+                         ▼ (on cache miss)             │
+            ┌────────────────────────────┐             │
+            │   ClickHouse (Read Store)  │             │
+            │ • Historical Queries       │             │
+            └────────────────────────────┘             │
+                                                       │
+╔════════════════════════════════════════════════════════════════════════════╗
+║                            CLIENT / FRONTEND                               ║
+║                                                                            ║
+║  ┌─────────────┐                 ╔════════════════════════════════════╗    ║
+║  │ Client /    │────────────────▶║          MONITORING & ALERTS       ║    ║
+║  │ Frontend    │                 ║                                    ║    ║
+║  │ (Dashboards,│                 ║  ┌───────────────┐                 ║    ║
+║  │ Web, Mobile)│                 ║  │  Prometheus   │ (metrics)       ║    ║
+║  └─────────────┘                 ║  └──────┬────────┘                 ║    ║
+║                                  ║         │                          ║    ║
+║                                  ║  ┌──────▼──────┐                        ║
+║                                  ║  │   Grafana   │  (visualization)       ║
+║                                  ║  └─────────────┘                        ║
+║                                  ║                                         ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+            </div>
+            
+            <div style="margin-top: 20px; padding: 20px; background: #e8f4fd; border-radius: 10px; border-left: 4px solid #007bff;">
+                <h4 style="margin: 0 0 15px 0; color: #004085;">🔗 CQRS Connection Explained</h4>
+                <p style="margin-bottom: 15px; color: #495057;">Here's exactly how the <strong>Write Side connects to the Read Side</strong> in our CQRS architecture:</p>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-family: monospace; font-size: 14px; line-height: 1.6;">
+                    <div style="color: #28a745; font-weight: bold; margin-bottom: 10px;">📝 WRITE FLOW:</div>
+                    <div style="color: #666;">
+                        1. Device sends data → API Gateway → NestJS Command API<br>
+                        2. NestJS publishes event → Kafka Topic<br>
+                        3. Write Service consumes from Kafka → Writes to ClickHouse (write DB)
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-family: monospace; font-size: 14px; line-height: 1.6;">
+                    <div style="color: #007bff; font-weight: bold; margin-bottom: 10px;">🔄 BRIDGE (Event Handler):</div>
+                    <div style="color: #666;">
+                        4. Event Handler ALSO consumes from same Kafka Topic<br>
+                        5. Event Handler creates/updates Read Models:<br>
+                        &nbsp;&nbsp; • Updates Redis cache (hot data)<br>
+                        &nbsp;&nbsp; • Triggers ClickHouse materialized views<br>
+                        &nbsp;&nbsp; • Sends real-time alerts/webhooks
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; line-height: 1.6;">
+                    <div style="color: #6f42c1; font-weight: bold; margin-bottom: 10px;">📖 READ FLOW:</div>
+                    <div style="color: #666;">
+                        6. Client queries → NestJS Query API<br>
+                        7. Query API checks Redis cache first<br>
+                        8. If cache miss → Queries ClickHouse (read-optimized views)<br>
+                        9. Results cached in Redis for future requests
+                    </div>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <strong style="color: #856404;">🎯 Key Point:</strong> 
+                    <span style="color: #856404;">The Event Handler is the critical bridge that transforms write events into optimized read models, ensuring eventual consistency between write and read sides.</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f1f3f4; border-radius: 8px; border-left: 4px solid #667eea;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">🔧 Architecture Legend:</h4>
+                <div style="font-family: monospace; font-size: 14px; line-height: 1.4;">
+                    <strong>╔══════════════╗</strong> - Core CQRS Microservices (Write Service & Event Handler)<br>
+                    <strong>┌──────────────┐</strong> - Infrastructure & External Systems<br>
+                    <strong>║ WRITE SIDE ║</strong> - Command processing & data ingestion<br>
+                    <strong>║ READ SIDE  ║</strong> - Query processing & data retrieval (aligned right)
+                </div>
             </div>
         </div>
 
@@ -604,7 +641,128 @@
         </div>
 
         <div class="card full-width">
-            <h2>💾 Redis Cache Layer Strategy</h2>
+            <h2>� Projection Services: The CQRS Read Model Builders</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #667eea;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">How Event Handler Bridges Write Side to Read Side</h4>
+                <p style="margin-bottom: 15px;">The Event Handler is the <strong>critical CQRS bridge</strong> that connects write operations to read models. It consumes the same Kafka events as the Write Service but has a completely different purpose: transforming write events into optimized read data.</p>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; font-family: monospace;">
+                    <h4 style="color: #0066cc; margin-bottom: 15px;">📊 Simplified CQRS Flow</h4>
+                    <div style="font-size: 1.1em; line-height: 2; color: #495057;">
+                        Kafka Events → <strong>Event Handler</strong><br>
+                        ↓<br>
+                        <strong>Process & Route</strong><br>
+                        ↓<br>
+                        <strong>Redis Cache</strong> + <strong>ClickHouse</strong><br>
+                        ↓<br>
+                        <strong>Fast Query API</strong>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <h4 style="color: #28a745; margin-bottom: 15px;">🔍 Concrete Example: Device Goes Offline</h4>
+                    <div style="font-family: monospace; font-size: 0.9em; line-height: 1.8; color: #495057;">
+                        <strong>1. Write Side:</strong> Device stops sending heartbeats → NestJS Command API publishes "device.offline" to Kafka<br>
+                        <strong>2. Write Service:</strong> Consumes event → Records offline timestamp in ClickHouse (write DB)<br>
+                        <strong>3. Event Handler:</strong> ALSO consumes same event → Updates Redis: <code>device:123:status = "offline"</code><br>
+                        <strong>4. Read Side:</strong> Dashboard queries device status → NestJS Query API → Redis returns "offline" instantly<br>
+                        <strong>5. Result:</strong> Dashboard shows device offline in real-time, data is also permanently stored
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                <div>
+                    <h3 style="color: #667eea; margin-bottom: 20px;">📈 Real-World Example</h3>
+                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="color: #28a745; margin-bottom: 15px;">Device Status Dashboard</h4>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">📥 Input Events:</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-family: monospace; font-size: 0.9em; color: #666;">
+                                <li>device.heartbeat</li>
+                                <li>device.detection</li>
+                                <li>device.error</li>
+                                <li>device.offline</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
+                            <h5 style="color: #155724; margin-bottom: 10px;">📤 Output Read Models:</h5>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.9em; color: #155724;">
+                                <li><strong>Redis:</strong> Current device status (online/offline)</li>
+                                <li><strong>Redis:</strong> Last detection timestamp per device</li>
+                                <li><strong>ClickHouse:</strong> Device health trends (24h)</li>
+                                <li><strong>ClickHouse:</strong> Geographic device distribution</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="color: #28a745; margin-bottom: 20px;">🎯 Why Projection Services?</h3>
+                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="color: #dc3545; margin-bottom: 15px;">❌ Without Projections</h4>
+                        <ul style="padding-left: 20px; line-height: 1.8; color: #495057; margin-bottom: 20px;">
+                            <li><strong>Slow queries:</strong> Must scan raw event data</li>
+                            <li><strong>Complex logic:</strong> API must aggregate on-the-fly</li>
+                            <li><strong>High load:</strong> Database overwhelmed with calculations</li>
+                            <li><strong>Poor UX:</strong> Dashboards load slowly</li>
+                        </ul>
+                        
+                        <h4 style="color: #28a745; margin-bottom: 15px;">✅ With Projections</h4>
+                        <ul style="padding-left: 20px; line-height: 1.8; color: #495057;">
+                            <li><strong>Fast queries:</strong> Pre-computed results</li>
+                            <li><strong>Simple API:</strong> Just fetch prepared data</li>
+                            <li><strong>Low DB load:</strong> Redis serves most requests</li>
+                            <li><strong>Real-time UX:</strong> Sub-millisecond responses</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #e8f5e8; padding: 25px; border-radius: 10px; border-left: 4px solid #28a745;">
+                <h3 style="color: #155724; margin-bottom: 20px;">🔧 Projection Service Types</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2.5em; margin-bottom: 15px;">⚡</div>
+                        <h4 style="color: #495057; margin-bottom: 15px;">Real-Time</h4>
+                        <ul style="text-align: left; padding-left: 20px; line-height: 1.6; color: #666; font-size: 0.9em;">
+                            <li>Device status updates</li>
+                            <li>Live counters</li>
+                            <li>Alert triggers</li>
+                            <li>Redis hot data</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2.5em; margin-bottom: 15px;">📊</div>
+                        <h4 style="color: #495057; margin-bottom: 15px;">Analytical</h4>
+                        <ul style="text-align: left; padding-left: 20px; line-height: 1.6; color: #666; font-size: 0.9em;">
+                            <li>Hourly aggregations</li>
+                            <li>Trend calculations</li>
+                            <li>Business metrics</li>
+                            <li>ClickHouse views</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2.5em; margin-bottom: 15px;">📋</div>
+                        <h4 style="color: #495057; margin-bottom: 15px;">Materialized</h4>
+                        <ul style="text-align: left; padding-left: 20px; line-height: 1.6; color: #666; font-size: 0.9em;">
+                            <li>Complex JOINs</li>
+                            <li>Search indexes</li>
+                            <li>Reporting tables</li>
+                            <li>Pre-computed views</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>�💾 Redis Cache Layer Strategy</h2>
             <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
                 <h4 style="color: #856404; margin-bottom: 15px;">Why Redis Sits Between Client APIs and Database?</h4>
                 <p style="margin-bottom: 15px;">Redis acts as a <strong>caching layer</strong> that intercepts read requests before they hit the database, significantly improving performance:</p>
